@@ -1,16 +1,22 @@
 
 const readline = require('readline');
-
+const net = require("net");
 const model = require('./model');
 const cmds = require('./cmds'); 
 const {log, biglog, errorlog, colorize} = require("./out");
 
 
-biglog('CORE Quiz','green');
+
+net.createServer(socket => {
+
+log(socket,"Se ha conectado un cliente desde "+socket.remoteAddress);
+
+
+biglog(socket,'CORE Quiz','green');
 
 const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
+  input: socket,
+  output: socket,
   prompt: colorize("quiz > ",'blue'),
   completer: (line) => {
   const completions = 'h help add delete show edit list test play p credits q quit'.split(' ');
@@ -21,74 +27,81 @@ const rl = readline.createInterface({
 
 });
 
+socket
+.on("end", () =>{rl.close();})
+.on("error", () =>{rl.close();})
+
 rl.prompt();
 
 rl.on('line', (line) => {
-	let args = line.split(" ");
-	let cmd = args[0].toLowerCase().trim();
+  let args = line.split(" ");
+  let cmd = args[0].toLowerCase().trim();
 
 
   switch (cmd) {
-  	case '': 
-  		rl.prompt();
-  		break;
+    case '': 
+      rl.prompt();
+      break;
     case 'h':
     case 'help':
-    	cmds.helpCmd(rl);
+      cmds.helpCmd(socket,rl);
       
     break;
 
     case 'q':
     case 'quit':
-    	rl.close();
-    	break;
+      cmds.quitCmd(socket, rl);
+      break;
 
     case 'add':
-    	cmds.addCmd(rl);
+      cmds.addCmd(socket,rl);
     break;
 
     case 'list':
-    	cmds.listCmd(rl);
+      cmds.listCmd(socket,rl);
     break;
 
     case 'show':
-    	cmds.showCmd(rl, args[1]);
+      cmds.showCmd(socket,rl, args[1]);
     break;
 
     case 'test':
-    	cmds.testCmd(rl, args[1]);
+      cmds.testCmd(socket,rl, args[1]);
     break;
 
     case 'delete':
-    	cmds.deleteCmd(rl, args[1]);
+      cmds.deleteCmd(socket,rl, args[1]);
     break;
 
     case 'edit':
-    	cmds.editCmd(rl, args[1]);
+      cmds.editCmd(socket,rl, args[1]);
     break;
 
     case 'play':
     case 'p':
-    	cmds.playCmd(rl);
+      cmds.playCmd(socket,rl);
     break;
 
     case 'credits':
-    console.log('Autor de la practica.');
-    console.log('JULIAN CASTRO TURGA');
-    rl.prompt();
+      cmds.creditCmd(socket,rl);
     break;
 
     default:
-      console.log(`Comando desconocido: '${colorize(cmd, 'red')}'`);
-      console.log(`Use ${colorize('help', 'green')} para ver todos los comandos disponibles.`);
+      log(socket,`Comando desconocido: '${colorize(cmd, 'red')}'`);
+      log(socket,`Use ${colorize('help', 'green')} para ver todos los comandos disponibles.`);
       rl.prompt();
       break;      
   }
   
 }).on('close', () => {
-  console.log('Juego cerrado,Adios!');
-  process.exit(0);
+  log(socket,'Juego cerrado,Adios!');
+  // process.exit(0); NO QUEREMOS MATAR EL SERVIDOR
 });
 
 
 
+
+
+})
+
+.listen(3030);
